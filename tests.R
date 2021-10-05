@@ -5,9 +5,11 @@ source("helpers.R")
 
 clObj <- parallel::makeCluster(2L)
 
+# platform
+cat("\n\nplatform: ", .Platform$OS.type, "\n")
 
 # digest clObj
-clparam <- getListOfBiocParallelParam(clObj = clObj)
+clparam <- getListOfBiocParallelParam2(clObj = clObj)
 cat("\n\nclparam:\n")
 print(clparam)
 

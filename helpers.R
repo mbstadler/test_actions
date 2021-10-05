@@ -34,3 +34,45 @@ getListOfBiocParallelParam <- function(clObj = NULL) {
         stop('Error configuring the parallel backend. The second registered backend (registered()[[2]] or clObj[[2]]) has to be of class "MulticoreParam" or "SerialParam"')
     return(bppl[seq_len(2)])
 }
+
+
+# variant that uses a separate logic on windows (where MulticoreParam is not supported)
+getListOfBiocParallelParam2 <- function(clObj = NULL) {
+    if (is.null(clObj)) { # no 'clObj' argument
+        bppl <- list(BiocParallel::SerialParam(), BiocParallel::SerialParam())
+    } else {             # have 'clObj' argument
+        if (inherits(clObj, "SOCKcluster")) {
+            if (identical(.Platform$OS.type, "windows")) {
+                # MulticoreParam is not supported on windows -> keep the current clObj
+                bppl <- list(methods::as(clObj, "SnowParam"),
+                             BiocParallel::SerialParam())
+            } else {
+                # non-windows platforms:
+                # get node names
+                tryCatch({
+                    nodeNames <- unlist(parallel::clusterEvalQ(clObj, Sys.info()['nodename']))
+                }, error = function(ex) {
+                    message("FAILED")
+                    stop("The cluster object does not work properly on this system. Please consult the manual of the package 'parallel'\n", call. = FALSE)
+                })
+                coresPerNode <- table(nodeNames)
+                # subset cluster object (represent each node just a single time)
+                clObjSub <- clObj[!duplicated(nodeNames)]
+                bppl <- if (min(coresPerNode) == 1)
+                    list(methods::as(clObj, "SnowParam"), BiocParallel::SerialParam())
+                else
+                    list(methods::as(clObjSub, "SnowParam"),
+                         BiocParallel::MulticoreParam(workers = min(coresPerNode)))
+            }
+        } else if (is.list(clObj) &&
+                   all(vapply(clObj, FUN = inherits,
+                              FUN.VALUE = TRUE, "BiocParallelParam"))) {
+            bppl <- clObj
+        }
+    }
+    if (length(bppl) == 1)
+        bppl[[2]] <- BiocParallel::SerialParam()
+    if (!inherits(bppl[[2]], c("MulticoreParam", "SerialParam")))
+        stop('Error configuring the parallel backend. The second registered backend (registered()[[2]] or clObj[[2]]) has to be of class "MulticoreParam" or "SerialParam"')
+    return(bppl[seq_len(2)])
+}
