@@ -22,5 +22,8 @@ cat("\n\nclsel: ", clsel, "\n")
 ret <- BiocParallel::bplapply(seq.int(nworkers[clsel]),
                               function(i) i,
                               BPPARAM = clparam[[clsel]])
+cat("\n\ntraceback:\n")
+traceback()
+
 cat("\n\nbplapply ret:\n")
 print(ret)
