@@ -59,7 +59,7 @@ jobs:
 
       - name: Install R package dependencies
         run: |
-          pkgs <- unique(readLines("depends.txt"))
+          pkgs <- unique(grep("^#", readLines("depends.txt"), value = TRUE, invert = TRUE))
           BiocManager::install(pkgs, Ncpu = 2L)
         shell: Rscript {0}
       
