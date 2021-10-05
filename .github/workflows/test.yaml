@@ -49,22 +49,18 @@ jobs:
           BiocManager::install(version = "${{ matrix.config.bioc }}", ask = FALSE)
         shell: Rscript {0}
 
-      - name: Query dependencies
-        run: |
-          saveRDS(remotes::dev_package_deps(dependencies = TRUE, repos = c(getOption('repos'), BiocManager::repositories())), 'depends.Rds', version = 2)
-        shell: Rscript {0}
-
       - name: Cache R packages
         if: runner.os != 'Windows' && matrix.config.image == null
         uses: actions/cache@v1
         with:
           path: ${{ env.R_LIBS_USER }}
-          key: ${{ runner.os }}-r-${{ matrix.config.r }}-bioc-${{ matrix.config.bioc }}-${{ hashFiles('depends.Rds') }}
+          key: ${{ runner.os }}-r-${{ matrix.config.r }}-bioc-${{ matrix.config.bioc }}-${{ hashFiles('depends.txt') }}
           restore-keys: ${{ runner.os }}-r-${{ matrix.config.r }}-bioc-${{ matrix.config.bioc }}-
 
       - name: Install R package dependencies
         run: |
-          BiocManager::install("BiocParallel", Ncpu = 2L)
+          pkgs <- unique(readLines("depends.txt"))
+          BiocManager::install(pkgs, Ncpu = 2L)
         shell: Rscript {0}
       
       - name: Session info
